@@ -5,6 +5,8 @@ import android.arch.persistence.room.Room;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 
 import java.util.List;
@@ -15,6 +17,10 @@ public class MainActivity extends LifecycleActivity {
 
     Context mContext;
     AppDatabase mDatabase;
+    RecyclerView mRecyclerView;
+    RecyclerView.LayoutManager mLayoutManager;
+    RecyclerView.Adapter mAdapter;
+    List<User> mDataset;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -22,12 +28,21 @@ public class MainActivity extends LifecycleActivity {
         setContentView(R.layout.activity_main);
 
         mContext = this;
+        mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
 
-        mDatabase = Room.databaseBuilder(mContext, AppDatabase.class, "mDatabase-users").build();
+        mDatabase = Room.databaseBuilder(mContext, AppDatabase.class, "mDatabase-mDataset").build();
 
         new SaveData().execute();
 
         new GetData().execute();
+    }
+
+    private void loadRecyclerView() {
+        mRecyclerView.setHasFixedSize(true);
+        mLayoutManager = new LinearLayoutManager(mContext);
+        mAdapter = new MainAdapter(mDataset);
+        mRecyclerView.setLayoutManager(mLayoutManager);
+        mRecyclerView.setAdapter(mAdapter);
     }
 
     private class SaveData extends AsyncTask<Void, Void, Void> {
@@ -38,8 +53,7 @@ public class MainActivity extends LifecycleActivity {
             User user = new User();
             user.setFirstName("Jake");
             user.setLastName("Blake");
-//            user.setUid(50);
-//            mDatabase.userDao().insertAll(user);
+            mDatabase.userDao().insertAll(user);
 
             return null;
         }
@@ -50,14 +64,22 @@ public class MainActivity extends LifecycleActivity {
         @Override
         protected Void doInBackground(Void... params) {
 
-            List<User> users = mDatabase.userDao().getAll();
+            mDataset = mDatabase.userDao().getAll();
 
-            for (int i = 0; i < users.size(); i++) {
-                User thisUser = users.get(i);
+            for (int i = 0; i < mDataset.size(); i++) {
+                User thisUser = mDataset.get(i);
                 Log.d(TAG, "doInBackground: User: " + thisUser.getFirstName() + " " + thisUser.getUid() + " " + thisUser.getLastName());
             }
 
             return null;
         }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            loadRecyclerView();
+        }
     }
+
+
 }
